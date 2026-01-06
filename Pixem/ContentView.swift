@@ -9,6 +9,9 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    let PI = 3.14159265358979323846
+    @State private var clicked: Bool = false
+    
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
 
@@ -31,6 +34,32 @@ struct ContentView: View {
                 ToolbarItem {
                     Button(action: addItem) {
                         Label("Add Item", systemImage: "plus")
+                    }
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    let msg = "\(PI, default: "%.2f")"
+                    Button(action: {
+                        clicked.toggle()
+                        
+                    }) {
+                        Text("Print PI")
+                    }
+                    .alert(isPresented: $clicked) {
+                        Alert(title: Text("\(msg.self)"))
+                        
+                    }
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    let msg = "O'MAMA"
+                    Button(action: {
+                        clicked.toggle()
+                        
+                    }) {
+                        Text("O'MAMA")
+                    }
+                    .alert(isPresented: $clicked) {
+                        Alert(title: Text("\(msg.self)"))
+                        
                     }
                 }
             }
