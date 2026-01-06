@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  Analytics.swift
 //  Pixem
 //
 //  Created by Andrew Younan on 6/1/2026.
@@ -8,24 +8,27 @@
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
+struct Analytics: View {
+    let PI = 3.14159265358979323846
+    @State private var clicked: Bool = false
+    @State private var fontSize = 12.0
+    @State private var text = "Hello World"
+
     
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
     
-    @State private var animateNavBar: Bool  = false
-
     var body: some View {
-        NavigationSplitView {
-            Navigation(animateNavBar: $animateNavBar)
-                .onAppear {
-                    animateNavBar = true
-                }
-        } detail: {
-            Text("Select an item")
+        VStack {
+            Text("Welcome to the analytics page!")
+                .bold()
+        }
+        .toolbar {
+            ToolbarItem(placement: .title) {
+                Text("Analytics")
+            }
         }
     }
-
     private func addItem() {
         withAnimation {
             let newItem = Item(timestamp: Date())
@@ -43,6 +46,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    Analytics()
         .modelContainer(for: Item.self, inMemory: true)
 }
