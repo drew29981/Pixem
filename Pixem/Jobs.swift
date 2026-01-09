@@ -9,11 +9,10 @@ import SwiftUI
 import SwiftData
 
 struct Jobs: View {
-    let PI = 3.14159265358979323846
-    @State private var clicked: Bool = false
-    
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query private var jobs: [Job]
+    
+    @EnvironmentObject var router: Router
     
     @State private var columnVisibility =
     NavigationSplitViewVisibility.doubleColumn
@@ -21,11 +20,11 @@ struct Jobs: View {
     var body: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                ForEach(jobs) { job in
+                    Button(action: {
+                        router.push(.job(job))
+                    }) {
+                        Text("\(job.title)")
                     }
                 }
                 .onDelete(perform: deleteItems)
@@ -38,7 +37,9 @@ struct Jobs: View {
                     EditButton()
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: addItem) {
+                    Button(action: {
+                        router.push(.createJob)
+                    }) {
                         Label("Add Item", systemImage: "plus")
                     }
                 }
@@ -47,17 +48,10 @@ struct Jobs: View {
             Text("Select an item")
         }
     }
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(items[index])
+                modelContext.delete(jobs[index])
             }
         }
     }
@@ -65,5 +59,5 @@ struct Jobs: View {
 
 #Preview {
     Jobs()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: Job.self, inMemory: true)
 }

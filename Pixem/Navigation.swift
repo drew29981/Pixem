@@ -16,42 +16,74 @@ import SwiftData
  
  */
 
-struct Navigation: View {
+struct Navigation<Content: View>: View {
     
-    @Binding public var animateNavBar: Bool
+    @EnvironmentObject private var router: Router
+    @State private var navigationTitle: String
+    @State public var content: Content
     
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .listRowSeparatorLeading, spacing: 20) {
-                NavigationLink(destination: Home()) {
-                    Image(systemName: "house.fill")
-                    Text("Home")
-                        .bold()
-                }
-                .offset(x: 20)
-                NavigationLink(destination: Analytics()) {
-                    Image(systemName: "chart.bar.yaxis")
-                    Text("Analytics")
-                        .bold()
-                    //                                chart.line.uptrend.xyaxis
-                }
-                .offset(x: 40)
-                NavigationLink(destination: Jobs()) {
-                    Image(systemName: "suitcase.fill")
-                    Text("Jobs")
-                        .bold()
-                }
-                .offset(x: 60)
-                NavigationLink(destination: Analytics()) {
-                    Image(systemName: "person.and.background.dotted")
-                        .imageScale(.large)
-                    Text("You")
-                        .bold()
-                    //                                    profile
-                }
-                .offset(x: 80)
+    init(navigationTitle: String, @ViewBuilder content: () -> Content) {
+        self.navigationTitle = navigationTitle
+        self.content = content()
+    }
+    
+    @ViewBuilder var body: some View {
+        NavigationStack(path: $router.path) {
+            VStack {
+                content
             }
-            .animation(.bouncy.speed(0.5), value: animateNavBar)
+            .toolbar {
+                ToolbarItem(placement: .bottomBar) {
+                    Button(action: {
+                        router.path.append(.home)
+                    }) {
+                        Image(systemName: "house.fill")
+                        Text("Home")
+                            .bold()
+                    }
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    Button(action: {
+                        router.path.append(.jobs)
+                    }) {
+                        Image(systemName: "suitcase.fill")
+                        Text("Jobs")
+                            .bold()
+                    }
+    //                NavigationLink(destination: Jobs()) {
+    //                    Image(systemName: "suitcase.fill")
+    //                    Text("Jobs")
+    //                        .bold()
+    //                }
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    Button(action: {
+                        router.path.append(.you)
+                    }) {
+                        Image(systemName: "person.and.background.dotted")
+                        Text("You")
+                            .bold()
+                    }
+                }
+            }
+            .navigationTitle(navigationTitle)
+            .navigationDestination(for: Destination.self) { destination in
+                switch destination {
+                case .you:
+                    You()
+                case .home:
+                    Home()
+                case .jobs:
+                    Jobs()
+                case .job(let job):
+                    JobView(job: job)
+                case .createJob:
+                    CreateJob()
+                case .analytics:
+                    EmptyView()
+                }
+            }
+//            .searchable(text: $text, placement: .toolbar) // creates a search bar (useful for future additions)
         }
     }
 }

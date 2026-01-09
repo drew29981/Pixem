@@ -10,9 +10,11 @@ import SwiftData
 
 @main
 struct PixemApp: App {
+    @StateObject var router: Router = Router()
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Job.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +27,10 @@ struct PixemApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Navigation(navigationTitle: "") {
+                ContentView()
+            }
+            .environmentObject(router)
         }
         .modelContainer(sharedModelContainer)
     }
