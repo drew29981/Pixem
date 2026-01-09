@@ -51,7 +51,7 @@ struct ContentView: View {
                 
                 if jobs.isEmpty {
                     Button(action: {
-                        router.push(.jobs)
+                        router.push(.createJob)
                     }) {
                         Text("Create your first job!")
                     }
