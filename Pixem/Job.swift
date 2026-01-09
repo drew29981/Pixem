@@ -14,20 +14,20 @@ public class Job {
     public var started: Date
     public var title: String
     public var workers: [Worker]
-    public var totalWorkerCost: Double? = 0
     public var isComplete: Bool
-    public var hoursToComplete: Int? = 0
-    public var totalHoursElasped: Int? = 0
+    public var hoursToComplete: Int?
+    public var totalHoursElasped: Int?
     public var autoFlag: Bool {
         workers.first { w in
             (w.actualHours ?? 0 > w.expectedHours ?? 0 && !isComplete) || (w.actualHours ?? 0 >  0 && expectedCost ?? 0 > actualCost ?? 0)
         } != nil
     }
-    public var expectedCost: Double? = 0
-    public var actualCost: Double? = 0
-    public var expectedProfit: Double? = 0
+    public var expectedCost: Double?
+    public var actualCost: Double?
+    public var expectedProfit: Double?
+    public var totalWorkerCost: Double?
     
-    init(id: UUID, started: Date, title: String, workers: [Worker], isComplete: Bool, expectedCost: Double? = 0, actualCost: Double? = 0, expectedProfit: Double? = 0, totalWorkerCost: Double? = 0, hoursToComplete: Int?) {
+    init(id: UUID, started: Date, title: String, workers: [Worker], isComplete: Bool, expectedCost: Double?, actualCost: Double?, expectedProfit: Double?, totalWorkerCost: Double?, hoursToComplete: Int?) {
         self.id = id
         self.started = started
         self.title = title
@@ -37,6 +37,7 @@ public class Job {
         self.actualCost = actualCost
         self.expectedProfit = expectedProfit
         self.totalWorkerCost = totalWorkerCost
+        self.hoursToComplete = hoursToComplete
     }
     
     init(job: Job) {

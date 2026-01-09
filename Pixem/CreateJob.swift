@@ -141,7 +141,7 @@ struct CreateJob: View {
         }
     }
     private func submit() {
-        let newJob = Job(id: UUID(), started: Date.now, title: description, workers: workers, isComplete: false, expectedProfit: expectedProfit ?? 0, totalWorkerCost: Double(calculatedCosts ?? 0), hoursToComplete: estimatedCompletion ?? 0)
+        let newJob = Job(id: UUID(), started: Date.now, title: description, workers: workers, isComplete: false, expectedCost: calculatedCosts, actualCost: calculatedCosts, expectedProfit: expectedProfit ?? 0, totalWorkerCost: Double(calculatedCosts ?? 0), hoursToComplete: estimatedCompletion ?? 0)
         
         modelContext.insert(newJob)
         
