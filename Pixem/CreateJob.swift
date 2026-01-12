@@ -52,7 +52,7 @@ struct CreateJob: View {
                                 // if the new value is not a number
                                 // workers[i].hourlyRate = oldValue
                             }
-                        TextField("Expected Hours", value: $workers[i].expectedHours, format: .number)
+                        TextField("Hours", value: $workers[i].expectedHours, format: .number)
                             .keyboardType(.decimalPad)
                     }
                 }

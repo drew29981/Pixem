@@ -12,40 +12,37 @@ struct Jobs: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var jobs: [Job]
     
-    @EnvironmentObject var router: Router
+    @EnvironmentObject private var router: Router
     
-    @State private var columnVisibility =
-    NavigationSplitViewVisibility.doubleColumn
-    
+//    @State private var columnVisibility =
+//    NavigationSplitViewVisibility.doubleColumn
+//    (columnVisibility: $columnVisibility)
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            List {
-                ForEach(jobs) { job in
-                    Button(action: {
-                        router.push(.job(job))
-                    }) {
-                        Text("\(job.title)")
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .largeTitle) {
-                    Text("Jobs")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        router.push(.createJob)
-                    }) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+        List {
+            ForEach(jobs) { job in
+                Button(action: {
+                    router.push(.job(job))
+                }) {
+                    Text("\(job.title)")
                 }
             }
-        } detail: {
-            Text("Select an item")
+            .onDelete(perform: deleteItems)
+        }
+        .listStyle(.insetGrouped)
+        .toolbar {
+            ToolbarItem(placement: .title) {
+                Text("Jobs")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                EditButton()
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    router.push(.createJob)
+                }) {
+                    Label("Add Item", systemImage: "plus")
+                }
+            }
         }
     }
     private func deleteItems(offsets: IndexSet) {
@@ -61,3 +58,35 @@ struct Jobs: View {
     Jobs()
         .modelContainer(for: Job.self, inMemory: true)
 }
+
+/*
+ List {
+     ForEach(jobs) { job in
+         Button(action: {
+             router.push(.job(job))
+         }) {
+             Text("\(job.title)")
+         }
+     }
+     .onDelete(perform: deleteItems)
+ }
+ .safeAreaInset(edge: .top, content: {
+     HStack(alignment: .center) {
+         EditButton()
+             .buttonStyle(.glass)
+         
+         Button(action: {
+             router.push(.createJob)
+         }) {
+             Image(systemName: "plus")
+         }
+         .buttonStyle(.glassProminent)
+     }
+ })
+ .toolbar {
+     ToolbarItem(placement: .largeTitle) {
+         Text("Jobs")
+     }
+     
+ }
+ */

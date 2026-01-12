@@ -23,4 +23,22 @@ extension Router {
     func reset() {
         path = []
     }
+    
+//    func last() -> String? {
+//        let name = switch path.last {
+//        case .home:
+//            "Home"
+//        case .analytics:
+//            "Analytics"
+//        case .createJob:
+//            "CreateJob"
+//        case .job:
+//            "Job"
+//        case .you:
+//            "You"
+//        case .none:
+//            "None"
+//        }
+//        return name
+//    }
 }

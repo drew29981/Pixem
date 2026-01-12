@@ -27,10 +27,8 @@ struct PixemApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Navigation(navigationTitle: "") {
-                ContentView()
-            }
-            .environmentObject(router)
+            ContentView()
+                .environmentObject(router)
         }
         .modelContainer(sharedModelContainer)
     }

@@ -16,74 +16,41 @@ import SwiftData
  
  */
 
-struct Navigation<Content: View>: View {
-    
+struct Navigation: View {
     @EnvironmentObject private var router: Router
-    @State private var navigationTitle: String
-    @State public var content: Content
-    
-    init(navigationTitle: String, @ViewBuilder content: () -> Content) {
-        self.navigationTitle = navigationTitle
-        self.content = content()
-    }
     
     @ViewBuilder var body: some View {
-        NavigationStack(path: $router.path) {
-            VStack {
-                content
-            }
-            .toolbar {
-                ToolbarItem(placement: .bottomBar) {
-                    Button(action: {
-                        router.path.append(.home)
-                    }) {
-                        Image(systemName: "house.fill")
-                        Text("Home")
-                            .bold()
-                    }
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    Button(action: {
-                        router.path.append(.jobs)
-                    }) {
-                        Image(systemName: "suitcase.fill")
-                        Text("Jobs")
-                            .bold()
-                    }
-    //                NavigationLink(destination: Jobs()) {
-    //                    Image(systemName: "suitcase.fill")
-    //                    Text("Jobs")
-    //                        .bold()
-    //                }
-                }
-                ToolbarItem(placement: .bottomBar) {
-                    Button(action: {
-                        router.path.append(.you)
-                    }) {
-                        Image(systemName: "person.and.background.dotted")
-                        Text("You")
-                            .bold()
-                    }
-                }
-            }
-            .navigationTitle(navigationTitle)
-            .navigationDestination(for: Destination.self) { destination in
-                switch destination {
-                case .you:
-                    You()
-                case .home:
+        TabView {
+            Tab("Home", systemImage: "house.fill") {
+                NavigationStack(path: $router.path) {
                     Home()
-                case .jobs:
-                    Jobs()
-                case .job(let job):
-                    JobView(job: job)
-                case .createJob:
-                    CreateJob()
-                case .analytics:
-                    EmptyView()
+                        .navigationDestination(for: Destination.self) { destination in
+                            destination.view
+                        }
                 }
             }
-//            .searchable(text: $text, placement: .toolbar) // creates a search bar (useful for future additions)
+            Tab("Jobs", systemImage: "suitcase.fill") {
+                NavigationStack(path: $router.path) {
+                    Jobs()
+                        .navigationDestination(for: Destination.self) { destination in
+                            destination.view
+                        }
+                }
+            }
+            Tab("You", systemImage: "person.and.background.dotted") {
+                NavigationStack(path: $router.path) {
+                    You()
+                        .navigationDestination(for: Destination.self) { destination in
+                            destination.view
+                        }
+                }
+            }
         }
+        .tabViewStyle(.tabBarOnly)
+//            .searchable(text: $text, placement: .toolbar) // creates a search bar (useful for future additions)
     }
+}
+
+#Preview {
+    Navigation()
 }

@@ -13,6 +13,8 @@ struct Card: View {
     @EnvironmentObject private var router: Router
     @Query private var jobs: [Job]
     
+    @State private var isExpanded = false
+    
     @ViewBuilder var body: some View {
         ForEach(0..<jobs.count, id: \.self) { i in
             Button(action: {
@@ -34,24 +36,62 @@ struct Card: View {
                         colors: [Color.black.opacity(0.8), Color.blue.opacity(0.5)],
                         startPoint: .leading, endPoint: .trailing))
                     
-                    DisclosureGroup("") {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            Text("\(jobs[i].workers.enumerated().map(\.element.name).joined(separator: ", "))")
+//                    DisclosureGroup("") {
+//                        ScrollView(.horizontal, showsIndicators: false) {
+//                            Text("\(jobs[i].workers.enumerated().map(\.element.name).joined(separator: ", "))")
+//                        }
+//                        VStack(alignment: .listRowSeparatorLeading) {
+//                            Label("\(jobs[i].expectedCost, default: "unspecified")", systemImage: "dollarsign")
+//                                .bold()
+//                                .foregroundStyle(Color.green)
+//                            Label("\(jobs[i].hoursToComplete, default: "unspecified")", systemImage: "hourglass")
+//                                .bold()
+//                            Label("\(jobs[i].workers.count, default: "unspecified")", systemImage: "person.3")
+//                                .bold()
+//                        }
+//                    }
+                    
+                    if isExpanded {
+                        VStack(alignment: .center) {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                Text("\(jobs[i].workers.enumerated().map(\.element.name).joined(separator: ", "))")
+                            }
+                            .safeAreaInset(edge: .trailing) {
+                                HStack {
+                                    Color.clear
+                                        .frame(width: 10)
+                                }
+                            }
+                            .padding(10)
+                            VStack(alignment: .listRowSeparatorLeading) {
+                                Label("\(jobs[i].expectedCost, default: "unspecified")", systemImage: "dollarsign")
+                                    .bold()
+                                    .foregroundStyle(Color.green)
+                                Label("\(jobs[i].hoursToComplete, default: "unspecified")", systemImage: "hourglass")
+                                    .bold()
+                                Label("\(jobs[i].workers.count, default: "unspecified")", systemImage: "person.3")
+                                    .bold()
+                            }
                         }
-                        VStack(alignment: .listRowSeparatorLeading) {
-                            Label("\(jobs[i].expectedCost, default: "unspecified")", systemImage: "dollarsign")
-                                .bold()
-                                .foregroundStyle(Color.green)
-                            Label("\(jobs[i].hoursToComplete, default: "unspecified")", systemImage: "hourglass")
-                                .bold()
-                            Label("\(jobs[i].workers.count, default: "unspecified")", systemImage: "person.3")
-                                .bold()
-                        }
+                        .padding(2)
                     }
                 }
                 .frame(alignment: .leading)
                 .padding(50)
                 .background(Color.clear.glassEffect())
+                .overlay(alignment: .bottom) {
+                    Button {
+                        withAnimation(.bouncy.speed(1.2)) {
+                            isExpanded.toggle()
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                            .foregroundColor(.blue)
+                            .padding(2)
+                    }
+                    .buttonStyle(GlassButtonStyle())
+                }
             }
         }
         .frame(width: 300, height: 200)
