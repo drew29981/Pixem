@@ -15,6 +15,8 @@ struct PixemApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Job.self,
+            Worker.self,
+            ShiftEntry.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

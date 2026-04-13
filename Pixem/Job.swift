@@ -8,48 +8,105 @@
 import Foundation
 import SwiftData
 
+public enum JobStatus: String, Codable, CaseIterable {
+    case draft, active, paused, complete, archived
+}
+
 @Model
-public class Job {
+public final class Job {
     public var id: UUID
-    public var started: Date
     public var title: String
-    public var workers: [Worker]
-    public var isComplete: Bool
-    public var hoursToComplete: Int?
-    public var totalHoursElasped: Int?
-    public var autoFlag: Bool {
-        workers.first { w in
-            (w.actualHours ?? 0 > w.expectedHours ?? 0 && !isComplete) || (w.actualHours ?? 0 >  0 && expectedCost ?? 0 > actualCost ?? 0)
-        } != nil
-    }
-    public var expectedCost: Double?
-    public var actualCost: Double?
-    public var expectedProfit: Double?
-    public var totalWorkerCost: Double?
-    
-    init(id: UUID, started: Date, title: String, workers: [Worker], isComplete: Bool, expectedCost: Double?, actualCost: Double?, expectedProfit: Double?, totalWorkerCost: Double?, hoursToComplete: Int?) {
+    public var createdAt: Date
+    public var startedAt: Date?
+    public var completedAt: Date?
+    public var status: JobStatus
+
+    /// What the client pays for the job. Drives profit math.
+    public var quotedPrice: Double?
+
+    /// Optional job-level hour budget. When nil, the expected total is derived
+    /// from the sum of each worker's `expectedHours` (per-worker pricing mode).
+    /// When set, this is the authoritative total (lump-sum pricing mode).
+    public var estimatedHours: Double?
+
+    @Relationship(deleteRule: .cascade)
+    public var workers: [Worker] = []
+
+    @Relationship(deleteRule: .cascade, inverse: \ShiftEntry.job)
+    public var shifts: [ShiftEntry] = []
+
+    public init(
+        id: UUID = UUID(),
+        title: String,
+        createdAt: Date = .now,
+        startedAt: Date? = nil,
+        completedAt: Date? = nil,
+        status: JobStatus = .draft,
+        quotedPrice: Double? = nil,
+        estimatedHours: Double? = nil,
+        workers: [Worker] = []
+    ) {
         self.id = id
-        self.started = started
         self.title = title
+        self.createdAt = createdAt
+        self.startedAt = startedAt
+        self.completedAt = completedAt
+        self.status = status
+        self.quotedPrice = quotedPrice
+        self.estimatedHours = estimatedHours
         self.workers = workers
-        self.isComplete = isComplete
-        self.expectedCost = expectedCost
-        self.actualCost = actualCost
-        self.expectedProfit = expectedProfit
-        self.totalWorkerCost = totalWorkerCost
-        self.hoursToComplete = hoursToComplete
     }
-    
-    init(job: Job) {
-        self.id = job.id
-        self.started = job.started
-        self.title = job.title
-        self.workers = job.workers
-        self.isComplete = job.isComplete
-        self.expectedCost = job.expectedCost
-        self.actualCost = job.actualCost
-        self.expectedProfit = job.expectedProfit
-        self.totalWorkerCost = job.totalWorkerCost
-        self.hoursToComplete = job.hoursToComplete
+
+    // MARK: - Derived hours
+
+    public var expectedHoursTotal: Double {
+        estimatedHours ?? workers.reduce(0) { $0 + $1.expectedHours }
+    }
+
+    public var actualHoursTotal: Double {
+        workers.reduce(0) { $0 + $1.actualHours }
+    }
+
+    // MARK: - Derived cost
+
+    public var expectedLaborCost: Double {
+        workers.reduce(0) { $0 + $1.expectedCost }
+    }
+
+    public var actualLaborCost: Double {
+        workers.reduce(0) { $0 + $1.actualCost }
+    }
+
+    public var expectedProfit: Double? {
+        quotedPrice.map { $0 - expectedLaborCost }
+    }
+
+    public var actualProfit: Double? {
+        quotedPrice.map { $0 - actualLaborCost }
+    }
+
+    // MARK: - Money-at-risk signals
+
+    /// 0..1+ ratio of actual to expected labor cost. >1 means over budget.
+    public var budgetBurn: Double {
+        guard expectedLaborCost > 0 else { return 0 }
+        return actualLaborCost / expectedLaborCost
+    }
+
+    public var isOverBudget: Bool {
+        status != .complete && budgetBurn > 1
+    }
+
+    public var isOverHours: Bool {
+        let target = expectedHoursTotal
+        return status != .complete && target > 0 && actualHoursTotal > target
+    }
+
+    /// True when the job has crossed a meaningful threshold that should draw
+    /// the user's attention. Kept as the single "needs attention" flag.
+    public var autoFlag: Bool { isOverBudget || isOverHours }
+
+    public var isActive: Bool {
+        workers.contains { $0.isClockedIn }
     }
 }
