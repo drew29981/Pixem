@@ -64,12 +64,14 @@ struct Card: View {
                             }
                             .padding(10)
                             VStack(alignment: .listRowSeparatorLeading) {
-                                Label("\(jobs[i].expectedCost, default: "unspecified")", systemImage: "dollarsign")
+                                Label(jobs[i].expectedLaborCost.formatted(.currency(code: "USD")),
+                                      systemImage: "dollarsign")
                                     .bold()
-                                    .foregroundStyle(Color.green)
-                                Label("\(jobs[i].hoursToComplete, default: "unspecified")", systemImage: "hourglass")
+                                    .foregroundStyle(jobs[i].isOverBudget ? Color.red : Color.green)
+                                Label(String(format: "%.1f h", jobs[i].expectedHoursTotal),
+                                      systemImage: "hourglass")
                                     .bold()
-                                Label("\(jobs[i].workers.count, default: "unspecified")", systemImage: "person.3")
+                                Label("\(jobs[i].workers.count)", systemImage: "person.3")
                                     .bold()
                             }
                         }
