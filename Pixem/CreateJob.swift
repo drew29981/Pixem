@@ -8,25 +8,56 @@
 import SwiftUI
 import SwiftData
 
+/// How the user priced this job for the client.
+/// Determines which fields the form asks for; the underlying cost model is the same.
+private enum PricingMode: String, CaseIterable, Identifiable {
+    case perWorker   = "Per worker"
+    case lumpSum     = "Lump sum"
+    var id: String { rawValue }
+}
+
 struct CreateJob: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Query private var jobs: [Job]
-    
+
+    @State private var description: String = ""
     @State private var workers: [Worker] = []
-    @State private var startJob: Bool = false
     @State private var workersEarnDifferent: Bool = true
     @State private var sameHourlyPay: Double?
-    @State private var description: String = ""
-    @State private var expectedProfit: Double?
-    @State private var calculatedCosts: Double?
-    @State private var calculatedHours: Int?
-    @State private var estimatedCompletion: Int?
-    
+    @State private var quotedPrice: Double?
+    @State private var lumpSumHours: Double?
+    @State private var pricingMode: PricingMode = .perWorker
+    @State private var startJob: Bool = false
     @State private var notify: Bool = false
-    
-    public var autoFlag: Bool { workers.count <= 0 || description.isEmpty || workers.contains(where: \.name.isEmpty) }
-    
+
+    private var totalExpectedHours: Double {
+        switch pricingMode {
+        case .perWorker: return workers.reduce(0) { $0 + $1.expectedHours }
+        case .lumpSum:   return lumpSumHours ?? 0
+        }
+    }
+
+    private var totalLaborCost: Double {
+        if !workersEarnDifferent {
+            return (sameHourlyPay ?? 0) * totalExpectedHours
+        }
+        switch pricingMode {
+        case .perWorker:
+            return workers.reduce(0) { $0 + $1.hourlyRate * $1.expectedHours }
+        case .lumpSum:
+            // Distribute lump-sum hours evenly across workers for cost estimate.
+            guard !workers.isEmpty else { return 0 }
+            let avgRate = workers.reduce(0) { $0 + $1.hourlyRate } / Double(workers.count)
+            return avgRate * totalExpectedHours
+        }
+    }
+
+    public var formInvalid: Bool {
+        workers.isEmpty ||
+        description.isEmpty ||
+        workers.contains(where: \.name.isEmpty)
+    }
+
     var body: some View {
         Form {
             Section(header: Text("Job Info")) {
@@ -38,59 +69,65 @@ struct CreateJob: View {
                 }
                 Toggle("Activate Job", isOn: $startJob)
                 Toggle("Workers Earn Different", isOn: $workersEarnDifferent)
+                Picker("Pricing", selection: $pricingMode) {
+                    ForEach(PricingMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
             }
+
             Section("Workers") {
-                Stepper("", value: getAsBindingInt(), in: 0...50)
+                Stepper("", value: workerCountBinding, in: 0...50)
                 ForEach(0..<workers.count, id: \.self) { i in
                     HStack {
                         TextField("Full Name", text: $workers[i].name)
                         TextField("Pay Rate", value: $workers[i].hourlyRate, format: .number)
                             .hidden(!workersEarnDifferent)
                             .keyboardType(.decimalPad)
-                            .onChange(of: workers[i].hourlyRate) { oldValue, newValue in
-                                
-                                // if the new value is not a number
-                                // workers[i].hourlyRate = oldValue
-                            }
-                        TextField("Hours", value: $workers[i].expectedHours, format: .number)
-                            .keyboardType(.decimalPad)
+                        if pricingMode == .perWorker {
+                            TextField("Hours", value: $workers[i].expectedHours, format: .number)
+                                .keyboardType(.decimalPad)
+                        }
                     }
                 }
                 .onDelete(perform: deleteWorkers)
-                
-                if workers.count > 0  {
+
+                if !workers.isEmpty {
                     HStack {
                         TextField("Pay Rate", value: $sameHourlyPay, format: .number)
                             .hidden(workersEarnDifferent)
                             .keyboardType(.decimalPad)
-                        
-                        let totalHours = workers.reduce(0) { $0 + Int($1.expectedHours ?? 0) }
-                        let costs: Double = !workersEarnDifferent ? (sameHourlyPay ?? 0) * Double(totalHours) : workers.reduce(0.0) { $0 + (Double($1.hourlyRate ?? 0.0) * Double($1.expectedHours ?? 0)) }
-                        
-                        Text("Total labor costs: \(costs)")
-                            .hidden(workers.count <= 0)
-                            .onChange(of: costs) {
-                                calculatedCosts = costs
-                                calculatedHours = totalHours
-                            }
+                        Text("Total labor: \(totalLaborCost.formatted(.currency(code: "USD")))")
                     }
                 }
             }
-            
+
             Section("Job Details") {
-                TextField("Estimated Completion", value: $estimatedCompletion, format: .number)
+                if pricingMode == .lumpSum {
+                    TextField("Total Estimated Hours", value: $lumpSumHours, format: .number)
+                        .keyboardType(.decimalPad)
+                }
+                TextField("Quoted Price (what the client pays)",
+                          value: $quotedPrice,
+                          format: .number)
                     .keyboardType(.decimalPad)
+                if let quoted = quotedPrice {
+                    let projectedProfit = quoted - totalLaborCost
+                    Text("Projected profit: \(projectedProfit.formatted(.currency(code: "USD")))")
+                        .foregroundStyle(projectedProfit < 0 ? Color.red : Color.green)
+                }
             }
-            
+
             if notify {
                 Text("Check all required fields.")
                     .bold()
                     .foregroundStyle(Color.red)
             }
+
             Section {
                 Button("Submit") {
-                    let allowedApostrophes: Set<Character> = ["'", "’"]
-
+                    let allowedApostrophes: Set<Character> = ["'", "\u{2019}"]
                     let inputChecksFail = description.contains { s in
                         let isAllowed = s.isLetter || s.isNumber || s.isWhitespace || allowedApostrophes.contains(s)
                         return !isAllowed || description.count < 5
@@ -102,62 +139,65 @@ struct CreateJob: View {
                     submit()
                     dismiss()
                 }
-                .disabled(autoFlag)
+                .disabled(formInvalid)
             }
         }
-        .onChange(of: notify) { oldValue, newValue in
-            formAlert()
-        }
+        .onChange(of: notify) { _, _ in formAlert() }
     }
+
     private func deleteWorkers(offsets: IndexSet) {
-        withAnimation {
-            workers.remove(atOffsets: offsets)
-        }
+        withAnimation { workers.remove(atOffsets: offsets) }
     }
-    private func getAsBindingInt() -> Binding<Int> {
-        let newVal = Binding<Int>(
-            get: {
-                self.workers.count
-            },
+
+    private var workerCountBinding: Binding<Int> {
+        Binding<Int>(
+            get: { workers.count },
             set: { newCount in
-                let diff = newCount - self.workers.count
+                let diff = newCount - workers.count
                 if diff > 0 {
-                    for _ in 0..<diff {
-                        workers.append(Worker())
-                    }
-                } else if (diff < 0) {
-                    for _ in 0..<(-diff) {
-                        workers.removeLast()
-                    }
+                    for _ in 0..<diff { workers.append(Worker()) }
+                } else if diff < 0 {
+                    for _ in 0..<(-diff) { workers.removeLast() }
                 }
             }
         )
-        return newVal
     }
+
     private func formAlert() {
         notify = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             notify = false
         }
     }
+
     private func submit() {
-        let newJob = Job(id: UUID(), started: Date.now, title: description, workers: workers, isComplete: false, expectedCost: calculatedCosts, actualCost: calculatedCosts, expectedProfit: expectedProfit ?? 0, totalWorkerCost: Double(calculatedCosts ?? 0), hoursToComplete: estimatedCompletion ?? 0)
-        
+        // If the user chose a flat rate, apply it to each worker so cost math stays consistent.
+        if !workersEarnDifferent, let flat = sameHourlyPay {
+            for w in workers { w.hourlyRate = flat }
+        }
+
+        // For lump-sum pricing, distribute total hours evenly as each worker's expected hours.
+        if pricingMode == .lumpSum, let total = lumpSumHours, !workers.isEmpty {
+            let perWorker = total / Double(workers.count)
+            for w in workers { w.expectedHours = perWorker }
+        }
+
+        let now = Date.now
+        let newJob = Job(
+            title: description,
+            createdAt: now,
+            startedAt: startJob ? now : nil,
+            status: startJob ? .active : .draft,
+            quotedPrice: quotedPrice,
+            estimatedHours: pricingMode == .lumpSum ? lumpSumHours : nil,
+            workers: workers
+        )
+
         modelContext.insert(newJob)
-        
         do {
             try modelContext.save()
-        }
-        catch {
+        } catch {
             print(error)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(jobs[index])
-            }
         }
     }
 }
