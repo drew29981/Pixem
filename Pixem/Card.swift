@@ -12,6 +12,7 @@ struct Card: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var router: Router
     @Query private var jobs: [Job]
+    @AppStorage("currencyCode") private var currencyCode: String = Locale.current.currency?.identifier ?? "AUD"
     
     @State private var isExpanded = false
     
@@ -64,7 +65,7 @@ struct Card: View {
                             }
                             .padding(10)
                             VStack(alignment: .listRowSeparatorLeading) {
-                                Label(jobs[i].expectedLaborCost.formatted(.currency(code: "USD")),
+                                Label(jobs[i].expectedLaborCost.formatted(.currency(code: currencyCode)),
                                       systemImage: "dollarsign")
                                     .bold()
                                     .foregroundStyle(jobs[i].isOverBudget ? Color.red : Color.green)

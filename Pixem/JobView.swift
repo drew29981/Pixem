@@ -10,9 +10,10 @@ import SwiftData
 
 struct JobView: View {
     @Bindable var job: Job
+    @AppStorage("currencyCode") private var currencyCode: String = Locale.current.currency?.identifier ?? "AUD"
 
     private var currency: FloatingPointFormatStyle<Double>.Currency {
-        .currency(code: "USD")
+        .currency(code: currencyCode)
     }
 
     @ViewBuilder var body: some View {

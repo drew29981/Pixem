@@ -19,6 +19,7 @@ private enum PricingMode: String, CaseIterable, Identifiable {
 struct CreateJob: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("currencyCode") private var currencyCode: String = Locale.current.currency?.identifier ?? "AUD"
 
     @State private var description: String = ""
     @State private var workers: [Worker] = []
@@ -98,7 +99,7 @@ struct CreateJob: View {
                         TextField("Pay Rate", value: $sameHourlyPay, format: .number)
                             .hidden(workersEarnDifferent)
                             .keyboardType(.decimalPad)
-                        Text("Total labor: \(totalLaborCost.formatted(.currency(code: "USD")))")
+                        Text("Total labor: \(totalLaborCost.formatted(.currency(code: currencyCode)))")
                     }
                 }
             }
@@ -114,7 +115,7 @@ struct CreateJob: View {
                     .keyboardType(.decimalPad)
                 if let quoted = quotedPrice {
                     let projectedProfit = quoted - totalLaborCost
-                    Text("Projected profit: \(projectedProfit.formatted(.currency(code: "USD")))")
+                    Text("Projected profit: \(projectedProfit.formatted(.currency(code: currencyCode)))")
                         .foregroundStyle(projectedProfit < 0 ? Color.red : Color.green)
                 }
             }
